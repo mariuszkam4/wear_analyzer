@@ -13,34 +13,38 @@ dir_path = r'C:\Users\mariu\Desktop\Nauka\Badania\Tribo 2023\zużycie dane surow
 results_file_path = os.path.join(dir_path, 'results.csv')
 
 # Wylistowanie plików w katalogu
-files = os.listdir(dir_path)
+files = [f for f in os.listdir(dir_path) if f.endswith('.csv') and f != 'results.csv']
 
-# Usuń plik, jeśli istnieje
-if os.path.isfile(results_file_path):
-    os.remove(results_file_path)
+# Prezentowanie dostępnych parametrów użytkownikowi
+available_parameters = ["Długość", "Maksymalna głębokość", "Pole otworu", "Maksymalna wysokość", "Obszar szczytu"]
+
+print("Dostępne parametry:")
+for idx, param in enumerate(available_parameters, 1):
+    print(f"{idx}. {param}")
+
+# Pozwól użytkownikowi na wybór parametru
+chosen_param_idx = int(input("Wybierz numer parametru, który chcesz przetworzyć: ")) - 1
+chosen_param = available_parameters[chosen_param_idx]
+
+print(f"Przetwarzanie parametru: {chosen_param}")
 
 # Stworzenie pustego DataFrame do przechowywania wyników
 results = pd.DataFrame()
 
 # Pętla po plikach
 for file in files:
-    # Sprawdzanie, czy plik jest plikiem csv i nie jest plikiem wyników
-    if file.endswith('.csv') and file != 'results.csv':
-        # Tworzenie pełnej ścieżki do pliku
-        filepath = os.path.join(dir_path, file)
-        
-        # Czytanie pliku csv
-        df = pd.read_csv(filepath, sep=';', skiprows=3)
+    filepath = os.path.join(dir_path, file)
+    df = pd.read_csv(filepath, sep=';', skiprows=3)
 
-        # Wyodrębnianie danych dot. pola otworu
-        pole_otworu = df.loc[df['Name']=='Pole otworu'].copy()  # Dodajemy .copy(), aby uniknąć ostrzeżenia
+    # Wyodrębnianie danych dot. wybranego parametru przez użytkownika
+    param_data = df.loc[df['Name'] == chosen_param].copy()
 
-        # Jeżeli wartości w kolumnie 'Value' są stringami, przekonwertujmy je na liczby zmiennoprzecinkowe
-        if pole_otworu['Value'].dtype == 'O':  # 'O' oznacza obiekt, czyli w tym przypadku string
-            pole_otworu['Value'] = pole_otworu['Value'].str.replace(',', '.').astype(float)
+    # Jeżeli wartości w kolumnie 'Value' są stringami, przekonwertujmy je na liczby zmiennoprzecinkowe
+    if param_data['Value'].dtype == 'O':  # 'O' oznacza obiekt, czyli w tym przypadku string
+        param_data['Value'] = param_data['Value'].str.replace(',', '.').astype(float)
 
-        # Dodanie kolumny do DataFrame wyników
-        results[file] = pole_otworu['Value']
+    # Dodanie kolumny do DataFrame wyników
+    results[file] = param_data['Value']
 
 # Dodanie wiersza z wartościami średnimi
 results.loc['Mean'] = results.mean()
@@ -50,7 +54,6 @@ results.loc['Std Dev'] = results.std()
 
 # Zapisanie wyników do pliku csv
 results.to_csv(results_file_path)
-
 print("Dane zostały przetworzone. \nWyniki zapisano do pliku.")
 print()
 
@@ -59,7 +62,7 @@ data_to_plot = results.drop(['Mean', 'Std Dev'])
 plt.figure(figsize=(10,6))
 plt.boxplot(data_to_plot, vert=True, patch_artist=True) # Vert=True sprawia, że wykres jest pionowy
 plt.title('Rozkład wyników')
-plt.ylabel('Wartość zyżucia [μm\u00B2]')
+plt.ylabel(chosen_param)
 plt.xticks([i+1 for i in range(len(data_to_plot.columns))], data_to_plot.columns, rotation='vertical')
 plt.show()
 print()
