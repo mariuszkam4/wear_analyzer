@@ -7,61 +7,61 @@ print("Data processing..")
 print()
 
 # Directory path
-dir_path = r'C:\Users\mariu\Desktop\Nauka\Badania\Tribo 2023\zużycie dane surowe'
+user_directory = input ("Enter the path to the directory with the data for analysis:")
+dir_path = f"{user_directory}"
 
 # Path to the results file
 results_file_path = os.path.join(dir_path, 'results.csv')
 
-# Wylistowanie plików w katalogu
+# Creating a list of files from a directory
 files = [f for f in os.listdir(dir_path) if f.endswith('.csv') and f != 'results.csv']
 
-# Prezentowanie dostępnych parametrów użytkownikowi
+# Presenting available parameters to the user
 available_parameters = ["Długość", "Maksymalna głębokość", "Pole otworu", "Maksymalna wysokość", "Obszar szczytu"]
 
-print("Dostępne parametry:")
+print("Available parameters:")
 for idx, param in enumerate(available_parameters, 1):
     print(f"{idx}. {param}")
 
-# Pozwól użytkownikowi na wybór parametru
-chosen_param_idx = int(input("Wybierz numer parametru, który chcesz przetworzyć: ")) - 1
+# Allowing the user to select a parameter
+chosen_param_idx = int(input("Select the number of the parameter you want to process: ")) - 1
 chosen_param = available_parameters[chosen_param_idx]
 
-print(f"Przetwarzanie parametru: {chosen_param}")
+print(f"Parameter processing: {chosen_param}")
 
-# Stworzenie pustego DataFrame do przechowywania wyników
 results = pd.DataFrame()
 
-# Pętla po plikach
+# Loop through the files
 for file in files:
     filepath = os.path.join(dir_path, file)
     df = pd.read_csv(filepath, sep=';', skiprows=3)
 
-    # Wyodrębnianie danych dot. wybranego parametru przez użytkownika
+    # Extraction of data on the selected parameter by the user
     param_data = df.loc[df['Name'] == chosen_param].copy()
 
-    # Jeżeli wartości w kolumnie 'Value' są stringami, przekonwertujmy je na liczby zmiennoprzecinkowe
-    if param_data['Value'].dtype == 'O':  # 'O' oznacza obiekt, czyli w tym przypadku string
+    # Checking if the values in the 'Value' column are strings, if so they will be converted to floating point numbers
+    if param_data['Value'].dtype == 'O': 
         param_data['Value'] = param_data['Value'].str.replace(',', '.').astype(float)
 
-    # Dodanie kolumny do DataFrame wyników
+    # Adding a column to the DataFrame of results
     results[file] = param_data['Value']
 
-# Dodanie wiersza z wartościami średnimi
+# Adding a row with average values
 results.loc['Mean'] = results.mean()
 
-# Dodanie wiersza z wartościami odchylenia standardowego
+# Adding a row with standard deviation values
 results.loc['Std Dev'] = results.std()
 
-# Zapisanie wyników do pliku csv
+# Saving the results to a csv file
 results.to_csv(results_file_path)
 print("Dane zostały przetworzone. \nWyniki zapisano do pliku.")
 print()
 
-print("Tworzenie wykresu...")
+print("Creating a chart...")
 data_to_plot = results.drop(['Mean', 'Std Dev'])
 plt.figure(figsize=(10,6))
-plt.boxplot(data_to_plot, vert=True, patch_artist=True) # Vert=True sprawia, że wykres jest pionowy
-plt.title('Rozkład wyników')
+plt.boxplot(data_to_plot, vert=True, patch_artist=True) 
+plt.title('Distribution of the results')
 plt.ylabel(chosen_param)
 plt.xticks([i+1 for i in range(len(data_to_plot.columns))], data_to_plot.columns, rotation='vertical')
 plt.show()
